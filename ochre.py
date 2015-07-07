@@ -125,22 +125,6 @@ for line in importCon.iterdump():
 
  
 exportCon.executescript("drop table if exists keyval; create table keyval (key text, val text);")
-exportCon.executescript('''
-drop view if exists createdModifiedAtBy;
-create view createdModifiedAtBy as select uuid, createdAt, createdBy, modifiedAt, modifiedBy, modifiedUserid, createdUserid
-                                   from (select uuid, aenttimestamp as createdAt, fname || ' ' || lname as createdBy, userid as createdUserid
-                                         from archentity join user using (userid)
-                                         where uuid in (select uuid from latestnondeletedarchent)
-                                         group by uuid
-                                         having min(aenttimestamp)) as created
-                                     join (select uuid, valuetimestamp as modifiedAt, fname || ' ' || lname as modifiedBy, userid as modifiedUserid
-                                           from latestnondeletedaentvalue join user using (userid)
-                                           group by uuid) using (uuid)     ;
-alter table idealaent add column aentcountorder text ;
-alter table vocabulary add column vocabcountorder text;
-alter table attributekey add column formatstring text; 
-alter table attributekey add column AppendCharacterString text; 
-''')
 
 f = open(arch16nFile, 'r')
 for line in f:
