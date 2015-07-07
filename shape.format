@@ -1,0 +1,31 @@
+attach database 'shape.sqlite3' as shape;
+
+select uuid, aenttypename, attributename, group_concat(response, ' ') as response
+  from (
+        select uuid, aenttypeid, aenttypename, group_concat(format(formatstring, devocab, measure, freetext, certainty), appendcharacterstring) as response, null as deleted, aentcountorder, attributeid, attributename
+          from (
+                select uuid, aenttypeid, aenttypename, formatstring, devocab, measure, freetext, certainty, appendcharacterstring, null as deleted, aentcountorder, vocabcountorder, attributeid, attributename
+                  from latestNonDeletedArchent
+                  JOIN aenttype using (aenttypeid)
+                  JOIN idealaent using (aenttypeid)
+                  join attributekey  using (attributeid)
+                  join latestNonDeletedAentValue using (uuid, attributeid)
+                  left outer join (select vocabid, attributeid, coalesce(val, vocabname) as devocab, vocabcountorder 
+                                  from vocabulary 
+                                  left outer join shape.keyval on (vocabulary.vocabname = keyval.key))
+                                  using (attributeid, vocabid)
+                 order by uuid, aentcountorder, vocabcountorder
+                )
+          group by uuid, attributeid
+         having response is not null
+          order by uuid, aentcountorder)
+ group by uuid, attributeid
+ order by uuid;
+ 
+select uuid, aenttypename, 'identifier', response
+from latestNonDeletedArchEntFormattedIdentifiers join createdModifiedAtBy using (uuid)
+order by createdAt;
+
+
+
+detach database shape;

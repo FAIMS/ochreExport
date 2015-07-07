@@ -1,0 +1,12 @@
+{
+  "name":"Shapefile Exporter",
+  "version":1,
+  "key":"e6485af4-6e05-11e4-8c49-3c970e0cc7d6",
+  "interface":[
+    {
+      "type":"text",
+      "label":"EPSG",
+      "required":true
+    }
+  ]
+}
