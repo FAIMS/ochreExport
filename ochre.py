@@ -228,7 +228,7 @@ for line in f.readlines():
 	if (len(out) ==4):		
 		update = "update %s set %s = ? where uuid = %s;" % (clean(out[1]), clean(out[2]), out[0])
 		data = (unicode(out[3].replace("\\n","\n").replace("'","''"), errors="replace"),)
-		formattedIdentifiers.append({out[0]:clean(out[2]})
+		formattedIdentifiers[out[0]] = clean(out[2])
 
 		# exportCon.execute(update, data)
 
