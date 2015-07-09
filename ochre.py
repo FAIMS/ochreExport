@@ -214,6 +214,23 @@ files.append("attributes.xml")
 
 aentXML = ET.Element("archents")
 
+
+
+subprocess.call(["bash", "./format.sh", originalDir, exportDir, exportDir])
+
+updateArray = []
+f= open(exportDir+'shape.out', 'r')
+for line in f.readlines():	
+	out = line.replace("\n","").replace("\\r","").split("\t")
+	print "!!%s -- %s!!" %(line, out)
+	if (len(out) ==4):		
+		update = "update %s set %s = ? where uuid = %s;" % (clean(out[1]), clean(out[2]), out[0])
+		data = (unicode(out[3].replace("\\n","\n").replace("'","''"), errors="replace"),)
+		print update, data
+		# exportCon.execute(update, data)
+
+
+
 for aenttype in exportCon.execute("select aenttypeid, aenttypename from aenttype"):
 	aentTypeEnt = ET.SubElement(aentXML, "aenttype")
 	aentTypeEnt.set("aentTypeID", unicode(aenttype[0]))
@@ -290,8 +307,12 @@ indent(relnXML)
 root.write(exportDir+"relns.xml")
 files.append("relns.xml")
 
+shutil.copyfile(jsondata, "%smodule.settings"%(exportDir))
 
-ET.dump(root)
+files.append("module.settings")
+
+shutil.copyfile(arch16nFile, "%sprimaryArch16n.properties"%(exportDir))
+files.append("primaryArch16n.properties")
 
 zipf = zipfile.ZipFile("%s/%s-export.zip" % (finalExportDir,moduleName), 'w')
 for file in files:
