@@ -219,6 +219,8 @@ aentXML = ET.Element("archents")
 subprocess.call(["bash", "./format.sh", originalDir, exportDir, exportDir])
 
 updateArray = []
+formattedIdentifiers = []
+
 f= open(exportDir+'shape.out', 'r')
 for line in f.readlines():	
 	out = line.replace("\n","").replace("\\r","").split("\t")
@@ -226,10 +228,11 @@ for line in f.readlines():
 	if (len(out) ==4):		
 		update = "update %s set %s = ? where uuid = %s;" % (clean(out[1]), clean(out[2]), out[0])
 		data = (unicode(out[3].replace("\\n","\n").replace("'","''"), errors="replace"),)
-		print update, data
+		formattedIdentifiers[out[0]] = clean(out[2])
+
 		# exportCon.execute(update, data)
 
-
+print formattedIdentifiers
 
 for aenttype in exportCon.execute("select aenttypeid, aenttypename from aenttype"):
 	aentTypeEnt = ET.SubElement(aentXML, "aenttype")
@@ -242,6 +245,12 @@ for aenttype in exportCon.execute("select aenttypeid, aenttypename from aenttype
 			if value:
 				sublEle = ET.SubElement(aent,key)
 				sublEle.text = unicode(value)
+
+
+		formattedIdents = ET.SubElement(aent, "formattedIdentifier")
+		formattedIdents.text = formattedIdentifiers[row[0]]
+
+
 		idents = ET.SubElement(aent, "identifiers")
 		properties = ET.SubElement(aent, "properties")	
 		for ident in exportCon.execute( '''select vocabname, measure, freetext, certainty, attributename, aentcountorder, vocabcountorder, formatString, appendCharacterString
@@ -307,7 +316,7 @@ indent(relnXML)
 root.write(exportDir+"relns.xml")
 files.append("relns.xml")
 
-shutil.copyfile(jsondata, "%smodule.settings"%(exportDir))
+shutil.copyfile(originalDir+'module.settings', exportDir+"module.settings")
 
 files.append("module.settings")
 
