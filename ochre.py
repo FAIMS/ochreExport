@@ -248,7 +248,7 @@ for aenttype in exportCon.execute("select aenttypeid, aenttypename from aenttype
 
 
 		formattedIdents = ET.SubElement(aent, "formattedIdentifier")
-		if "identifier" in formattedIdentifiers["%s" % (row[0])]:
+		if "%s" % (row[0]) in formattedIdentifiers:
 			formattedIdents.text = formattedIdentifiers["%s" % (row[0])]['identifier']
 		else:
 			formattedIdents.text = "ERROR-NoIdentifier!"			
