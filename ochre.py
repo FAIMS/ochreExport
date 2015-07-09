@@ -219,7 +219,7 @@ aentXML = ET.Element("archents")
 subprocess.call(["bash", "./format.sh", originalDir, exportDir, exportDir])
 
 updateArray = []
-formattedIdentifiers = []
+formattedIdentifiers = {}
 
 f= open(exportDir+'shape.out', 'r')
 for line in f.readlines():	
@@ -228,7 +228,7 @@ for line in f.readlines():
 	if (len(out) ==4):		
 		update = "update %s set %s = ? where uuid = %s;" % (clean(out[1]), clean(out[2]), out[0])
 		data = (unicode(out[3].replace("\\n","\n").replace("'","''"), errors="replace"),)
-		formattedIdentifiers[out[0]] = clean(out[2])
+		formattedIdentifiers.append({out[0]:clean(out[2]})
 
 		# exportCon.execute(update, data)
 
