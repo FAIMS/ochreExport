@@ -35,11 +35,15 @@ import subprocess
 import glob
 import tempfile
 import xml.etree.ElementTree as ET
+import re
 
 print sys.argv
 
 from collections import namedtuple
 from itertools import izip
+
+
+pp = pprint.PrettyPrinter(indent=2)
 
 def namedtuple_factory(cursor, row):
     """
@@ -125,6 +129,7 @@ for line in importCon.iterdump():
 
  
 exportCon.executescript("drop table if exists keyval; create table keyval (key text, val text);")
+arch16nDict = {}
 
 f = open(arch16nFile, 'r')
 for line in f:
@@ -132,7 +137,12 @@ for line in f:
 	keyval = line.replace("\n","").replace("\r","").decode("utf-8").split('=')
 	keyval[0] = '{'+keyval[0]+'}'
 	exportCon.execute("insert into keyval(key, val) VALUES(?, ?)", keyval)
+	arch16nDict[keyval[0]] = keyval[1]
 f.close()
+
+#pattern = re.compile(r'\b(' + '|'.join(arch16nDict.keys()) + r')\b')
+pattern = re.compile('|'.join(re.escape(key) for key in arch16nDict.keys()))
+pp.pprint(arch16nDict)
 
 '''
 Attributes + Vocab
@@ -221,19 +231,23 @@ subprocess.call(["bash", "./format.sh", originalDir, exportDir, exportDir])
 updateArray = []
 formattedIdentifiers = {}
 
+
+
 f= open(exportDir+'shape.out', 'r')
 for line in f.readlines():	
 	out = line.replace("\n","").replace("\\r","").split("\t")
-	print "!!%s -- %s!!" %(line, out)
+	#print "!!%s -- %s!!" %(line, out)
 	if (len(out) ==4):		
-		update = "update %s set %s = ? where uuid = %s;" % (clean(out[1]), clean(out[2]), out[0])
-		data = (unicode(out[3].replace("\\n","\n").replace("'","''"), errors="replace"),)
-		formattedIdentifiers[out[0]] = {}
-		formattedIdentifiers[out[0]][clean(out[2])] = data
+		data = unicode(out[3].replace("\\n","\n").replace("'","''"), errors="replace")
+		if str(out[0]) not in formattedIdentifiers:
+			formattedIdentifiers[str(out[0])] = {}
+		formattedIdentifiers[str(out[0])][out[2]] = data
 
+		# print out[2]
+		# pp.pprint(formattedIdentifiers[str(out[0])])
 		# exportCon.execute(update, data)
 
-print formattedIdentifiers
+#pp.pprint(formattedIdentifiers)
 
 for aenttype in exportCon.execute("select aenttypeid, aenttypename from aenttype"):
 	aentTypeEnt = ET.SubElement(aentXML, "aenttype")
@@ -247,12 +261,7 @@ for aenttype in exportCon.execute("select aenttypeid, aenttypename from aenttype
 				sublEle = ET.SubElement(aent,key)
 				sublEle.text = unicode(value)
 
-
-		formattedIdents = ET.SubElement(aent, "formattedIdentifier")
-		if str(row[0]) in formattedIdentifiers and "identifier" in formattedIdentifiers[str(row[0])]:
-			formattedIdents.text = formattedIdentifiers[str(row[0])]['identifier']
-		else:
-			formattedIdents.text = "ERROR-NoIdentifier!"			
+			
 
 
 		idents = ET.SubElement(aent, "identifiers")
@@ -272,6 +281,14 @@ for aenttype in exportCon.execute("select aenttypeid, aenttypename from aenttype
 					sublEle = ET.SubElement(identEle,key)
 					sublEle.text = unicode(value)
 		
+
+		formattedIdents = ET.SubElement(idents, "formattedIdentifier")
+		if str(row[0]) in formattedIdentifiers and "identifier" in formattedIdentifiers[str(row[0])]:
+			formattedIdents.text = unicode(formattedIdentifiers[str(row[0])]['identifier'])	
+		else:
+			formattedIdents.text = "ERROR-NoIdentifier!"
+
+
 		for prop in exportCon.execute( '''select vocabname, measure, freetext, certainty, attributename, aentcountorder, vocabcountorder, formatString, appendCharacterString, attributeid
 	from latestNonDeletedArchent 
 	JOIN aenttype using (aenttypeid) 
@@ -286,6 +303,17 @@ for aenttype in exportCon.execute("select aenttypeid, aenttypename from aenttype
 				if value:
 					sublEle = ET.SubElement(propEle,key)
 					sublEle.text = unicode(value)
+
+			if str(row[0]) in formattedIdentifiers:
+				#print str(	)
+				if prop[4] in formattedIdentifiers[str(row[0])]:
+					formattedProp = ET.SubElement(propEle, "formattedAttribute")
+					#print "Good: %s %s" % (prop[4], formattedIdentifiers[str(row[0])][prop[4]])
+					formattedProp.text = pattern.sub(lambda x: arch16nDict[x.group()], unicode(formattedIdentifiers[str(row[0])][prop[4]]))
+				else:
+					print "Notfound: %s" % (prop[4])
+					pp.pprint(formattedIdentifiers[str(row[0])])
+
 
 
 
